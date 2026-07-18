@@ -50,6 +50,24 @@ Anonymous admin requests redirect to `/admin/login`. Authenticated admins openin
 
 Requirements: Elixir 1.19+, Erlang/OTP, Docker, and Node/npm.
 
+### Run the complete stack with Docker
+
+The production-style container builds a Phoenix release, runs pending migrations on startup, and publishes the application on host port `4010` (Phoenix uses port `4000` only inside the container):
+
+```bash
+docker compose up --build
+```
+
+Open [http://localhost:4010](http://localhost:4010). PostgreSQL data is retained in the `smart_city_lamp_postgres_data` volume. The Compose credentials and `SECRET_KEY_BASE` are development-only defaults; replace them with secrets before any production deployment. The public emulator is enabled explicitly for this local demo stack.
+
+Useful commands:
+
+```bash
+docker compose up --build -d
+docker compose logs -f app
+docker compose down
+```
+
 ```bash
 docker compose up -d postgres
 mix setup

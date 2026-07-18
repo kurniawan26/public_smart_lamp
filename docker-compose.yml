@@ -1,4 +1,23 @@
 services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smart_city_lamp_app
+    environment:
+      DATABASE_URL: ecto://postgres:postgres@postgres/smart_city_lamp_dev
+      SECRET_KEY_BASE: 1vMmm7QpQhH3x5tA8gR4bV9cN2kL6sF0dJ7wE3yU5iO8pZ1aX4cB6nM9qS2hK7rT
+      PHX_HOST: localhost
+      PHX_SERVER: "true"
+      PORT: "4000"
+      ENABLE_PUBLIC_EMULATOR: "true"
+    ports:
+      - "4010:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
   postgres:
     image: postgres:17-alpine
     container_name: smart_city_lamp_postgres
