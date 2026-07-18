@@ -25,8 +25,8 @@ COPY lib lib
 COPY assets assets
 
 RUN mkdir -p priv/static/assets/css priv/static/assets/js
-RUN mix assets.deploy
 RUN mix compile
+RUN mix assets.deploy
 RUN mix release
 
 FROM ${DEBIAN_IMAGE} AS runner
