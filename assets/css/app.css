@@ -1,0 +1,71 @@
+/* See the Tailwind configuration guide for advanced usage
+   https://tailwindcss.com/docs/configuration */
+
+@import "tailwindcss" source(none);
+@import "leaflet/dist/leaflet.css";
+@import "leaflet-routing-machine/dist/leaflet-routing-machine.css";
+@import "phoenix-colocated/smart_city_lamp/colocated.css";
+@source "../css";
+@source "../js";
+@source "../../lib/smart_city_lamp_web";
+/* Required for Tailwind to automatically pick up changes in colocated CSS files in dev */
+@source "../../_build/dev/phoenix-colocated/smart_city_lamp/*/";
+
+/* A Tailwind plugin that makes "hero-#{ICON}" classes available.
+   The heroicons installation itself is managed by your mix.exs */
+@plugin "../vendor/heroicons";
+
+/* Add variants based on LiveView classes */
+@custom-variant phx-click-loading (.phx-click-loading&, .phx-click-loading &);
+@custom-variant phx-submit-loading (.phx-submit-loading&, .phx-submit-loading &);
+@custom-variant phx-change-loading (.phx-change-loading&, .phx-change-loading &);
+
+/* Make LiveView wrapper divs transparent for layout */
+[data-phx-session], [data-phx-teleported-src] { display: contents }
+
+/* This file is for your main application CSS */
+
+html { color-scheme: light; }
+body {
+  min-width: 320px;
+  background: #f6f7f2;
+  color: #1e293b;
+  font-family: Geist, "Avenir Next", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+}
+button, a { transition-duration: 180ms; }
+button:active, a:active { transform: translateY(1px) scale(.99); }
+.phx-click-loading, .phx-submit-loading { cursor: wait; opacity: .68; }
+
+.leaflet-container { background: #e8eeea; font-family: inherit; }
+.leaflet-tile-pane { filter: saturate(.72) contrast(.9) brightness(1.04); }
+.leaflet-bar { border: 1px solid rgba(203,213,225,.9) !important; box-shadow: 0 12px 28px -18px rgba(51,65,85,.5) !important; }
+.leaflet-control-zoom a { background: rgba(255,255,255,.94) !important; color: #334155 !important; border-color: #e2e8f0 !important; }
+.leaflet-control-attribution { background: rgba(255,255,255,.82) !important; color: #64748b; }
+.leaflet-control-attribution a { color: #0f766e; }
+.lamp-map-marker-wrap { background: transparent; border: 0; }
+.leaflet-routing-container { display: none; }
+.technician-office-marker { background: transparent; border: 0; }
+.technician-office-marker span { display: grid; width: 42px; height: 24px; place-items: center; border: 2px solid white; border-radius: 999px; background: #0f766e; color: white; font-size: 8px; font-weight: 800; box-shadow: 0 8px 20px -10px rgba(15,23,42,.65); }
+.technician-route-icon { filter: drop-shadow(0 8px 7px rgba(15,23,42,.25)); }
+.device-map-marker { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 999px; border: 2px solid white; outline: 1px solid currentColor; box-shadow: 0 8px 20px -10px rgba(51,65,85,.55); }
+.device-map-marker span { width: 9px; height: 9px; border-radius: 999px; background: currentColor; }
+.device-map-marker.normal { color: #34d399; background: rgba(16,185,129,.18); }
+.device-map-marker.warning { color: #fbbf24; background: rgba(245,158,11,.18); }
+.device-map-marker.suspected { color: #fb923c; background: rgba(249,115,22,.18); }
+.device-map-marker.critical { color: #fb7185; background: rgba(244,63,94,.18); animation: marker-pulse 1.5s ease-out infinite; }
+.device-map-marker.offline { color: #64748b; background: rgba(100,116,139,.18); }
+.device-map-marker.maintenance { color: #60a5fa; background: rgba(59,130,246,.18); }
+.leaflet-popup-content-wrapper, .leaflet-popup-tip { background: white; color: #334155; border: 1px solid #e2e8f0; }
+.leaflet-popup-content-wrapper { border-radius: 16px; box-shadow: 0 18px 45px -24px rgba(51,65,85,.48); }
+.leaflet-popup-content { margin: 14px 16px; }
+.device-popup { display: flex; min-width: 190px; flex-direction: column; gap: 4px; }
+.device-popup small { color: #64748b; font-family: ui-monospace, monospace; }
+.device-popup strong { color: #0f172a; font-size: 14px; }
+.device-popup span { color: #64748b; }
+.device-popup b { margin-top: 5px; text-transform: capitalize; color: #0f766e; }
+@keyframes marker-pulse { 0% { box-shadow: 0 0 0 0 rgba(251,113,133,.5); } 70% { box-shadow: 0 0 0 16px rgba(251,113,133,0); } 100% { box-shadow: 0 0 0 0 rgba(251,113,133,0); } }
+
+@keyframes soft-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: no-preference) {
+  main > div { animation: soft-rise 420ms cubic-bezier(.2,.7,.2,1) both; }
+}

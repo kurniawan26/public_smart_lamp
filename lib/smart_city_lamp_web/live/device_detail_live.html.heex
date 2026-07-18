@@ -1,0 +1,332 @@
+<Layouts.admin flash={@flash} current_admin={@current_admin}>
+  <div class="mx-auto max-w-[1500px] px-5 py-8 sm:px-8 lg:py-10">
+    <header class="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <.link
+          navigate={~p"/admin/dashboard"}
+          class="mb-4 inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 transition hover:text-teal-700"
+        ><.icon name="hero-arrow-left" class="size-3.5" /> Monitoring</.link>
+        <div class="flex items-center gap-3">
+          <span class="grid size-11 place-items-center rounded-xl bg-teal-50 text-teal-700"><.icon
+            name="hero-light-bulb"
+            class="size-6"
+          /></span><div>
+            <h1 class="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
+              {@device.name}
+            </h1><p class="mt-1 font-mono text-xs tracking-wide text-slate-500">
+              {@device.device_code}
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <span class="rounded-lg bg-slate-100 px-3 py-2 text-xs font-bold uppercase text-slate-700">{@device.status}</span>
+        <span class={[
+          "rounded-lg px-3 py-2 text-xs font-bold uppercase",
+          @device.connectivity_status == :online && "bg-emerald-400/10 text-emerald-700",
+          @device.connectivity_status == :degraded && "bg-amber-400/10 text-amber-700",
+          @device.connectivity_status == :offline && "bg-slate-400/10 text-slate-600"
+        ]}>{@device.connectivity_status}</span>
+      </div>
+    </header>
+
+    <section id="device-profile" class="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <.profile_item
+        icon="hero-map-pin"
+        label="Installation address"
+        value={@device.installation_address}
+      />
+      <.profile_item
+        icon="hero-calendar-days"
+        label="Installed"
+        value={Date.to_iso8601(@device.installation_date)}
+      />
+      <.profile_item icon="hero-cpu-chip" label="Firmware" value={@device.firmware_version} />
+      <.profile_item
+        icon="hero-clock"
+        label="Last seen"
+        value={
+          if(@device.last_seen_at,
+            do: Calendar.strftime(@device.last_seen_at, "%d %b %Y · %H:%M:%S UTC"),
+            else: "Never"
+          )
+        }
+      />
+    </section>
+
+    <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+      <div class="space-y-6">
+        <section
+          id="current-status"
+          class="rounded-2xl border border-slate-200/80 bg-white p-5"
+        >
+          <div class="mb-4">
+            <h2 class="font-semibold text-slate-900">Current status</h2><p class="mt-1 text-xs text-slate-500">
+              Derived from the most recent telemetry and detection results
+            </p>
+          </div>
+          <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            <.status_item label="Lamp" value={@device.lamp_status} />
+            <.status_item label="Security" value={@device.security_status} />
+            <.status_item label="Environment" value={@device.environment_status} />
+            <.status_item label="Crowd" value={@device.crowd_level} />
+            <.status_item label="Traffic" value={@device.traffic_level} />
+            <.status_item label="Brightness" value={"#{@device.brightness_level}%"} />
+          </div>
+        </section>
+
+        <section
+          id="telemetry-charts"
+          class="rounded-2xl border border-slate-200/80 bg-white p-5"
+        >
+          <div class="mb-4">
+            <h2 class="font-semibold text-slate-900">Telemetry trends</h2><p class="mt-1 text-xs text-slate-500">
+              Voltage, current, thermal, vibration, and combined activity
+            </p>
+          </div>
+          <div class="grid gap-3 md:grid-cols-2">
+            <.telemetry_chart
+              :for={{field, label, unit, color} <- chart_specs()}
+              label={label}
+              unit={unit}
+              color={color}
+              points={Map.fetch!(@chart_data, field).points}
+              latest={Map.fetch!(@chart_data, field).latest}
+            />
+          </div>
+        </section>
+
+        <section
+          id="device-incidents-panel"
+          class="rounded-2xl border border-slate-200/80 bg-white p-5"
+        >
+          <div class="mb-4">
+            <h2 class="font-semibold text-slate-900">Incident history</h2><p class="mt-1 text-xs text-slate-500">
+              Detection results and complete lifecycle timeline
+            </p>
+          </div>
+          <div
+            :if={@incidents_empty?}
+            id="device-incidents-empty"
+            class="rounded-xl border border-dashed border-slate-200/80 p-6 text-center text-xs text-slate-500"
+          >
+            No incidents recorded for this device.
+          </div>
+          <div id="device-incidents" phx-update="stream" class="space-y-3">
+            <article
+              :for={{id, incident} <- @streams.device_incidents}
+              id={id}
+              class="rounded-xl bg-slate-50 p-4"
+            >
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <span class="text-[9px] font-bold uppercase tracking-wider text-rose-700">{incident.severity} · {incident.status}</span><h3 class="mt-1 text-sm font-semibold text-slate-900">
+                    {incident.title}
+                  </h3>
+                </div><span class="font-mono text-xs text-slate-500">{incident.confidence_score}%</span>
+              </div>
+              <div class="mt-3 flex flex-wrap gap-2">
+                <span
+                  :for={event <- incident.events}
+                  class="inline-flex items-center gap-1.5 text-[10px] text-slate-600"
+                ><span class="size-1.5 rounded-full bg-teal-700"></span>{event.event_type}</span>
+              </div>
+            </article>
+          </div>
+        </section>
+      </div>
+
+      <aside class="space-y-6">
+        <section
+          id="technician-dispatch-panel"
+          class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white"
+        >
+          <div class="p-5">
+            <div class="flex items-center justify-between">
+              <div>
+                <h2 class="font-semibold text-slate-900">Technician dispatch</h2><p class="mt-1 text-xs text-slate-500">
+                  Jakarta technician office → device location
+                </p>
+              </div><span class={[
+                "rounded-full px-3 py-1 text-[9px] font-bold uppercase",
+                @repair_dispatch && "bg-amber-100 text-amber-800",
+                !@repair_dispatch && "bg-slate-100 text-slate-600"
+              ]}>{if(@repair_dispatch, do: @repair_dispatch.status, else: "standby")}</span>
+            </div>
+            <div :if={@repair_dispatch} class="mt-4 grid grid-cols-2 gap-2">
+              <.reading
+                label="Travel simulation"
+                value={"#{div(@repair_dispatch.travel_ms, 1000)} seconds"}
+              /><.reading
+                label="Repair delay"
+                value={"#{div(@repair_dispatch.repair_ms, 1000)} seconds"}
+              />
+            </div>
+          </div>
+          <div
+            id="technician-route-map"
+            phx-hook="DeviceMap"
+            phx-update="ignore"
+            data-devices={Jason.encode!(@repair_map_devices)}
+            data-repair={@repair_dispatch && Jason.encode!(@repair_dispatch)}
+            class="h-64 w-full border-t border-slate-200"
+          >
+          </div>
+        </section>
+
+        <section
+          id="remote-control"
+          class="rounded-2xl border border-slate-200/80 bg-white p-5"
+        >
+          <div class="mb-4 flex items-center justify-between">
+            <div>
+              <h2 class="font-semibold text-slate-900">Remote control</h2><p class="mt-1 text-xs text-slate-500">
+                Commands execute immediately in the simulator
+              </p>
+            </div><.icon name="hero-command-line" class="size-5 text-teal-700" />
+          </div>
+          <.form
+            for={@command_form}
+            id="remote-command-form"
+            phx-change="validate_command"
+            phx-submit="issue_command"
+          >
+            <.input
+              field={@command_form[:command_type]}
+              type="select"
+              label="Command"
+              options={Commands.command_options()}
+            />
+            <div :if={@selected_command == "SET_BRIGHTNESS"} class="mt-3">
+              <.input
+                field={@command_form[:brightness_level]}
+                type="number"
+                min="0"
+                max="100"
+                label="Brightness level"
+              />
+            </div>
+            <button
+              id="issue-command"
+              type="submit"
+              class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 py-3 text-sm font-bold text-white transition hover:bg-teal-800 phx-submit-loading:opacity-60"
+            ><.icon name="hero-paper-airplane" class="size-4" /> Send command</button>
+          </.form>
+          <div class="mt-3 grid grid-cols-2 gap-2">
+            <button
+              :if={@device.status != :maintenance}
+              id="enter-maintenance"
+              phx-click="maintenance"
+              phx-value-mode="enter"
+              class="rounded-lg bg-blue-400/10 px-3 py-2.5 text-xs font-bold text-blue-700 transition hover:bg-blue-400/20"
+            >Enter maintenance</button>
+            <button
+              :if={@device.status == :maintenance}
+              id="exit-maintenance"
+              phx-click="maintenance"
+              phx-value-mode="exit"
+              class="rounded-lg bg-emerald-400/10 px-3 py-2.5 text-xs font-bold text-emerald-700 transition hover:bg-emerald-400/20"
+            >Exit maintenance</button>
+          </div>
+          <button
+            id="admin-recover-device"
+            phx-click="recover_device"
+            disabled={not is_nil(@repair_dispatch)}
+            class="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-800 hover:border-emerald-300 hover:bg-emerald-100 disabled:cursor-wait disabled:opacity-50"
+          ><.icon name="hero-truck" class="size-4" />{if(@repair_dispatch,
+            do: "Technician in progress",
+            else: "Dispatch technician & recover"
+          )}</button>
+        </section>
+
+        <section
+          id="latest-device-telemetry"
+          class="rounded-2xl border border-slate-200/80 bg-white p-5"
+        >
+          <h2 class="font-semibold text-slate-900">Latest telemetry</h2>
+          <div :if={@latest_telemetry} class="mt-4 grid grid-cols-2 gap-2">
+            <.reading label="Voltage" value={"#{@latest_telemetry.voltage} V"} />
+            <.reading label="Current" value={"#{@latest_telemetry.current} A"} />
+            <.reading label="Power" value={"#{@latest_telemetry.power_watt} W"} />
+            <.reading label="LED temp" value={"#{@latest_telemetry.led_temperature}°C"} />
+            <.reading label="Humidity" value={"#{@latest_telemetry.humidity}%"} />
+            <.reading label="Vibration" value={@latest_telemetry.vibration} />
+            <.reading label="Pedestrians" value={@latest_telemetry.pedestrian_count} />
+            <.reading label="Vehicles" value={@latest_telemetry.vehicle_count} />
+          </div>
+          <p :if={!@latest_telemetry} class="mt-4 text-xs text-slate-500">
+            No telemetry received yet.
+          </p>
+          <div
+            :if={@live_reading}
+            id="live-device-sensors"
+            class="mt-5 border-t border-slate-200 pt-5"
+          >
+            <div class="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <h3 class="text-xs font-semibold text-slate-800">
+                  Live environmental conditions
+                </h3>
+                <p class="mt-1 text-[10px] text-slate-500">WebSocket reading · not persisted</p>
+              </div>
+              <span class="size-2 animate-pulse rounded-full bg-emerald-500"></span>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <.reading label="Humidity" value={"#{@live_reading.humidity}%"} />
+              <.reading label="Temperature" value={"#{@live_reading.ambient_temperature}°C"} />
+              <.reading label="Air quality" value={@live_reading.air_quality} />
+              <.reading label="Noise" value={"#{@live_reading.noise_db} dB"} />
+              <.reading label="Crowd" value={@live_reading.crowd_level} />
+              <.reading label="Traffic" value={@live_reading.traffic_level} />
+            </div>
+          </div>
+        </section>
+
+        <section
+          id="command-history-panel"
+          class="rounded-2xl border border-slate-200/80 bg-white p-5"
+        >
+          <h2 class="font-semibold text-slate-900">Command history</h2>
+          <p :if={@commands_empty?} id="commands-empty" class="mt-4 text-xs text-slate-500">
+            No remote commands yet.
+          </p>
+          <div id="device-commands" phx-update="stream" class="mt-4 space-y-2">
+            <article
+              :for={{id, command} <- @streams.device_commands}
+              id={id}
+              class="rounded-lg bg-slate-50 p-3"
+            >
+              <div class="flex items-center justify-between">
+                <strong class="text-[10px] text-slate-900">{command.command_type}</strong><span class="text-[9px] font-bold uppercase text-emerald-700">{command.status}</span>
+              </div><p class="mt-1 text-[10px] text-slate-500">{command.response_message}</p>
+            </article>
+          </div>
+        </section>
+
+        <section
+          id="device-audit-panel"
+          class="rounded-2xl border border-slate-200/80 bg-white p-5"
+        >
+          <h2 class="font-semibold text-slate-900">Device audit trail</h2>
+          <p :if={@events_empty?} id="events-empty" class="mt-4 text-xs text-slate-500">
+            No audit events yet.
+          </p>
+          <div id="device-events" phx-update="stream" class="mt-4 space-y-2">
+            <article
+              :for={{id, event} <- @streams.device_events}
+              id={id}
+              class="border-l border-teal-200 pl-3"
+            >
+              <div class="flex items-center justify-between">
+                <strong class="text-[10px] text-slate-700">{event.event_type}</strong><time class="text-[9px] text-slate-600">{Calendar.strftime(
+                  event.inserted_at,
+                  "%H:%M:%S"
+                )}</time>
+              </div><p class="mt-1 text-[10px] leading-4 text-slate-500">{event.notes}</p>
+            </article>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </div>
+</Layouts.admin>

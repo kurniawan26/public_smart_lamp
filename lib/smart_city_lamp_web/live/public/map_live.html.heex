@@ -1,0 +1,186 @@
+<Layouts.app flash={@flash}>
+  <div class="mx-auto max-w-[1500px] px-5 py-10 sm:px-8">
+    <header class="mb-7 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-[0.24em] text-teal-700">
+          Interactive public network
+        </p><h1 class="mt-3 text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">
+          Jakarta lamp map
+        </h1><p class="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+          Click a marker to inspect its condition and trigger a safe simulation directly from the side panel.
+        </p>
+      </div>
+      <div id="public-map-summary" class="flex gap-2">
+        <.public_stat label="Active" value={@summary.online} tone="emerald" /><.public_stat
+          label="Attention"
+          value={@summary.warning + @summary.critical}
+          tone="amber"
+        />
+      </div>
+    </header>
+
+    <section class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_28px_70px_-44px_rgba(51,65,85,.55)]">
+      <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+        <div>
+          <h2 class="font-semibold text-slate-900">Live public status</h2><p class="mt-1 text-xs text-slate-500">
+            Select any marker to open lamp controls
+          </p>
+        </div><span class="hidden items-center gap-2 text-xs font-semibold text-teal-700 sm:flex"><.icon
+          name="hero-cursor-arrow-rays"
+          class="size-4"
+        /> Click a lamp marker</span>
+      </div>
+      <div
+        id="public-device-map"
+        phx-hook="DeviceMap"
+        phx-update="ignore"
+        data-selectable="true"
+        data-devices={Jason.encode!(@map_devices)}
+        data-repair={@active_repair && Jason.encode!(@active_repair)}
+        class="h-[680px] w-full"
+      >
+      </div>
+    </section>
+  </div>
+
+  <div :if={@selected_device} id="device-drawer-layer" class="fixed inset-0 z-[1800]">
+    <button
+      id="close-device-drawer-backdrop"
+      phx-click="close_device"
+      aria-label="Close lamp details"
+      class="absolute inset-0 size-full bg-slate-900/20 backdrop-blur-[2px]"
+    ></button>
+    <aside
+      id="public-device-drawer"
+      class="absolute inset-y-0 right-0 w-full max-w-lg overflow-y-auto border-l border-slate-200 bg-[#f6f7f2] p-5 shadow-[-24px_0_70px_-42px_rgba(15,23,42,.55)] sm:p-7"
+    >
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <p class="font-mono text-[10px] tracking-wider text-teal-700">
+            {@selected_device.device_code}
+          </p><h2 class="mt-1 text-2xl font-semibold tracking-tight text-slate-900">
+            {@selected_device.name}
+          </h2>
+        </div><button
+          id="close-device-drawer"
+          phx-click="close_device"
+          class="grid size-10 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+          aria-label="Close"
+        ><.icon name="hero-x-mark" class="size-5" /></button>
+      </div>
+
+      <div class="mt-6 overflow-hidden rounded-[1.75rem] border border-slate-200 bg-[#e7efeb] p-5">
+        <img
+          id="lamp-condition-asset"
+          src={lamp_asset(@selected_device)}
+          alt="Current smart lamp condition"
+          class="mx-auto h-52 w-full object-contain"
+        />
+      </div>
+      <div id="current-device-status" class="mt-4 grid grid-cols-2 gap-2">
+        <.status label="Connectivity" value={@selected_device.connectivity_status} /><.status
+          label="Lamp"
+          value={@selected_device.lamp_status}
+        /><.status label="Security" value={@selected_device.security_status} /><.status
+          label="Brightness"
+          value={"#{@selected_device.brightness_level}%"}
+        />
+      </div>
+
+      <section
+        id="live-environment-feed"
+        class="mt-6 rounded-2xl border border-slate-200 bg-white p-4"
+      >
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-sm font-semibold text-slate-900">Live ambient feed</h3><p class="mt-1 text-[10px] text-slate-500">
+              Random ephemeral data · WebSocket only
+            </p>
+          </div>
+          <span class={[
+            "size-2 rounded-full",
+            @live_reading && "animate-pulse bg-emerald-500",
+            !@live_reading && "bg-slate-300"
+          ]}></span>
+        </div>
+        <div :if={@live_reading} class="mt-4 grid grid-cols-3 gap-2">
+          <.status label="Weather" value={@live_reading.weather} /><.status
+            label="Air"
+            value={@live_reading.air_quality}
+          /><.status label="Noise" value={"#{@live_reading.noise_db} dB"} />
+          <.status label="Crowd" value={@live_reading.crowd_level} /><.status
+            label="Traffic"
+            value={@live_reading.traffic_level}
+          /><.status label="Temp" value={"#{@live_reading.ambient_temperature}°C"} />
+          <.status label="Rain" value={@live_reading.rain_level} /><.status
+            label="PM2.5"
+            value={@live_reading.pm25}
+          /><.status label="Water" value={"#{@live_reading.water_level_cm} cm"} />
+        </div>
+        <div
+          :if={!@live_reading}
+          class="mt-4 rounded-xl bg-slate-50 p-4 text-xs leading-5 text-slate-500"
+        >
+          <%= if @selected_device.connectivity_status == :offline or @selected_device.lamp_status in [:offline, :power_failure] do %>
+            Signal paused — this device is not transmitting.
+          <% else %>
+            Waiting for the next live sensor broadcast…
+          <% end %>
+        </div>
+      </section>
+
+      <section class="mt-7 border-t border-slate-200 pt-6">
+        <div>
+          <h3 class="text-lg font-semibold text-slate-900">Vandalism actions</h3><p class="mt-1 text-xs leading-5 text-slate-600">
+            Only physical and security actions are persisted. Each button triggers immediately without confirmation.
+          </p>
+        </div>
+        <div
+          :if={@simulation_enabled}
+          id="drawer-scenario-buttons"
+          class="mt-4 grid grid-cols-2 gap-2.5"
+        >
+          <button
+            :for={{label, event, icon} <- scenarios()}
+            id={"scenario-#{String.downcase(event)}"}
+            phx-click="run_scenario"
+            phx-value-event={event}
+            class={[
+              "group min-h-20 rounded-xl border p-3 text-left transition hover:-translate-y-0.5 active:translate-y-0",
+              "border-slate-200 bg-white hover:border-teal-300 hover:bg-teal-50"
+            ]}
+          ><.icon
+            name={icon}
+            class="size-4 text-teal-700"
+          /><strong class="mt-3 block text-[11px] text-slate-800">{label}</strong></button>
+        </div>
+        <div
+          :if={!@simulation_enabled}
+          id="simulation-unavailable"
+          class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs leading-5 text-amber-800"
+        >
+          Public simulation is disabled in this environment.
+        </div>
+      </section>
+
+      <section
+        id="last-simulation-result"
+        class="mt-6 rounded-2xl border border-slate-200 bg-white p-4"
+      >
+        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">
+          Last trigger result
+        </h3><div :if={@last_result} class="mt-3 grid grid-cols-2 gap-2 text-xs">
+          <.status label="Event" value={@last_result.event} /><.status
+            label="Telemetry"
+            value={@last_result.telemetry.id}
+          /><.status label="Security" value={@last_result.device.security_status} /><.status
+            label="Incident"
+            value={@last_result.incident_created}
+          />
+        </div><p :if={!@last_result} class="mt-2 text-xs text-slate-500">
+          Choose one condition above to run it immediately.
+        </p>
+      </section>
+    </aside>
+  </div>
+</Layouts.app>

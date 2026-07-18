@@ -1,0 +1,32 @@
+<div class="grid min-h-screen place-items-center bg-[#f6f7f2] px-5 py-12">
+  <main class="w-full max-w-md rounded-[2rem] border border-slate-200/80 bg-white p-7 shadow-[0_28px_70px_-42px_rgba(51,65,85,.55)] sm:p-9">
+    <.link navigate={~p"/"} class="mb-8 inline-flex items-center gap-3">
+      <span class="grid size-10 place-items-center rounded-xl bg-teal-700 text-white"><.icon
+        name="hero-light-bulb"
+        class="size-5"
+      /></span>
+      <span><strong class="block text-sm tracking-wide text-slate-900">LUMEN GRID</strong><small class="text-[10px] uppercase tracking-[0.2em] text-slate-500">Admin console</small></span>
+    </.link>
+    <h1 class="text-3xl font-semibold tracking-tight text-slate-900">Sign in</h1>
+    <p class="mt-2 text-sm leading-6 text-slate-600">
+      Restricted monitoring and incident operations.
+    </p>
+    <.form for={@form} id="admin-login-form" action={~p"/admin/login"} class="mt-7 space-y-4">
+      <.input field={@form[:email]} type="email" label="Email" autocomplete="username" required />
+      <.input
+        field={@form[:password]}
+        type="password"
+        label="Password"
+        autocomplete="current-password"
+        required
+      />
+      <button
+        id="admin-sign-in"
+        class="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 py-3 text-sm font-bold text-white hover:bg-teal-800 phx-submit-loading:opacity-60"
+      >
+        <.icon name="hero-arrow-right-end-on-rectangle" class="size-4" /> Sign in
+      </button>
+    </.form>
+  </main>
+  <Layouts.flash_group flash={@flash} />
+</div>
