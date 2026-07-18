@@ -24,6 +24,7 @@ COPY priv priv
 COPY lib lib
 COPY assets assets
 
+RUN mkdir -p priv/static/assets/css priv/static/assets/js
 RUN mix assets.deploy
 RUN mix compile
 RUN mix release
