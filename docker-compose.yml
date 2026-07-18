@@ -11,6 +11,10 @@ services:
       PHX_SERVER: "true"
       PORT: "4000"
       ENABLE_PUBLIC_EMULATOR: "true"
+      INIT_DEMO_DATA: "true"
+      DEMO_ADMIN_EMAIL: admin@smartlamp.local
+      DEMO_ADMIN_PASSWORD: admin12345
+      DEMO_ADMIN_NAME: Smart Lamp Administrator
     ports:
       - "4010:4000"
     depends_on:

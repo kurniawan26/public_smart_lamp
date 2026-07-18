@@ -46,9 +46,11 @@ WORKDIR /app
 RUN chown nobody /app
 
 COPY --from=builder --chown=nobody:root /app/_build/prod/rel/smart_city_lamp ./
+COPY --chown=nobody:root docker/entrypoint.sh /app/bin/container-start
+RUN chmod 755 /app/bin/container-start
 
 USER nobody
 
 EXPOSE 4000
 
-CMD ["sh", "-c", "bin/smart_city_lamp eval 'SmartCityLamp.Release.migrate()' && exec bin/smart_city_lamp start"]
+ENTRYPOINT ["/app/bin/container-start"]

@@ -60,6 +60,28 @@ docker compose up --build
 
 Open [http://localhost:4010](http://localhost:4010). PostgreSQL data is retained in the `smart_city_lamp_postgres_data` volume. The Compose credentials and `SECRET_KEY_BASE` are development-only defaults; replace them with secrets before any production deployment. The public emulator is enabled explicitly for this local demo stack.
 
+### Pitch / user-testing starter
+
+The container entrypoint performs these steps on every start:
+
+```text
+run pending migrations
+→ initialize demo admin and 20 lamps when INIT_DEMO_DATA=true
+→ preserve existing devices and tester changes on subsequent restarts
+→ start the Phoenix release
+```
+
+Configure the pitch admin through environment variables:
+
+```text
+INIT_DEMO_DATA=true
+DEMO_ADMIN_EMAIL=admin@smartlamp.local
+DEMO_ADMIN_PASSWORD=admin12345
+DEMO_ADMIN_NAME=Smart Lamp Administrator
+```
+
+The values in `docker-compose.yml` are intended only for a controlled pitch. Change `DEMO_ADMIN_PASSWORD` and `SECRET_KEY_BASE` before sharing the URL. After the testing period, set both `INIT_DEMO_DATA=false` and `ENABLE_PUBLIC_EMULATOR=false`; existing database data remains intact.
+
 Useful commands:
 
 ```bash

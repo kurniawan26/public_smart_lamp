@@ -2,12 +2,24 @@ alias SmartCityLamp.Devices.Device
 alias SmartCityLamp.Accounts
 alias SmartCityLamp.Repo
 
-if Mix.env() != :prod and is_nil(Accounts.get_admin_by_email("admin@smartlamp.local")) do
+seed_admin? =
+  if Code.ensure_loaded?(Mix) do
+    Mix.env() != :prod or
+      String.downcase(System.get_env("INIT_DEMO_DATA", "false")) in ~w(true 1 yes on)
+  else
+    String.downcase(System.get_env("INIT_DEMO_DATA", "false")) in ~w(true 1 yes on)
+  end
+
+admin_email = System.get_env("DEMO_ADMIN_EMAIL", "admin@smartlamp.local")
+admin_password = System.get_env("DEMO_ADMIN_PASSWORD", "admin12345")
+admin_name = System.get_env("DEMO_ADMIN_NAME", "Smart Lamp Administrator")
+
+if seed_admin? and is_nil(Accounts.get_admin_by_email(admin_email)) do
   {:ok, _admin} =
     Accounts.create_admin(%{
-      email: "admin@smartlamp.local",
-      password: "admin12345",
-      name: "Smart Lamp Administrator",
+      email: admin_email,
+      password: admin_password,
+      name: admin_name,
       role: :admin
     })
 end
@@ -79,8 +91,5 @@ Enum.with_index(locations, 1)
 
   %Device{}
   |> Device.changeset(attrs)
-  |> Repo.insert!(
-    on_conflict: {:replace_all_except, [:id, :inserted_at]},
-    conflict_target: :device_code
-  )
+  |> Repo.insert!(on_conflict: :nothing, conflict_target: :device_code)
 end)
